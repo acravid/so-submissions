@@ -137,9 +137,7 @@ int inode_create(inode_type n_type) {
     return -1;
 }
 
-/*
-
-*/
+// -------
 int get_inode_block(int inumber, int id){
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || !valid_inode_block_number(id)) {
         return -1;
@@ -152,6 +150,8 @@ int get_inode_block(int inumber, int id){
     }
 }
 
+
+// -------
 int truncate_file(int inumber){
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
         return -1;
@@ -174,6 +174,7 @@ int truncate_file(int inumber){
  *  - inumber: i-node's number
  * Returns: 0 if successful, -1 if failed
  */
+// -------
 int inode_delete(int inumber) {
     // simulate storage access delay (to i-node and freeinode_ts)
     insert_delay();
