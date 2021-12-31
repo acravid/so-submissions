@@ -139,6 +139,28 @@ int inode_create(inode_type n_type) {
 
 /*
 
+    return -1 if error, id of block_allocated else
+
+*/
+int inumber_block_alloc(int inumber){
+    if(!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || 
+        inode_table[inumber].i_size % BLOCK_SIZE) //not in the beginning of new block
+        return -1;
+    int block_id = inode_table[inumber].i_size/ BLOCK_SIZE;
+    if(block_id >= 10 + BLOCK_SIZE)
+        return -1;
+    if(block_id < 10)
+        inode_table[inumber].i_data_direct[block_id] = data_block_alloc();
+    else{
+        if(block_id == 10)
+            inode_table[inumber].i_data_indirect = data_block_alloc();
+        char *block = (char*) data_block_get(inode_table[inumber].i_data_indirect);
+        block[block_id-10] = (char*) data_block_alloc();
+    }
+    return block_id;
+}
+/*
+
 */
 int get_inode_block(int inumber, int id){
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || !valid_inode_block_number(id)) {
