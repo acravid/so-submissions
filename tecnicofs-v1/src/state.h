@@ -23,7 +23,8 @@ typedef enum { T_FILE, T_DIRECTORY } inode_type;
 typedef struct {
     inode_type i_node_type;
     size_t i_size;
-    int i_data_block;
+    int i_data_direct[NUMBER_DIRECT_BLOCKS];
+    int i_data_indirect;
     /* in a real FS, more fields would exist here */
 } inode_t;
 
@@ -38,9 +39,12 @@ typedef struct {
 } open_file_entry_t;
 
 #define MAX_DIR_ENTRIES (BLOCK_SIZE / sizeof(dir_entry_t))
+#define RETURN_VALUE_ERROR (-1)
 
 void state_init();
 void state_destroy();
+
+int get_inode_block(int inumber, int id);
 
 int inode_create(inode_type n_type);
 int inode_delete(int inumber);

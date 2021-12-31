@@ -56,12 +56,10 @@ int tfs_open(char const *name, int flags) {
 
         /* Trucate (if requested) */
         if (flags & TFS_O_TRUNC) {
-            if (inode->i_size > 0) {
-                if (data_block_free(inode->i_data_block) == -1) {
-                    return -1;
-                }
+            if(truncate_file(inum) == -1)
+                return -1;
+            else
                 inode->i_size = 0;
-            }
         }
         /* Determine initial offset */
         if (flags & TFS_O_APPEND) {
@@ -111,12 +109,12 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     }
 
     /* Determine how many bytes to write */
-    if (to_write + file->of_offset > BLOCK_SIZE) {
-        to_write = BLOCK_SIZE - file->of_offset;
+    if (to_write + file->of_offset > MAXIMUM_FILE_BYTES) {
+        to_write = MAXIMUM_FILE_BYTES - file->of_offset;
     }
 
     if (to_write > 0) {
-        if (inode->i_size == 0) {
+        if (inode->i_size % BLOCK_SIZE == 0) {
             /* If empty file, allocate new block */
             inode->i_data_block = data_block_alloc();
         }
@@ -140,6 +138,15 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     return (ssize_t)to_write;
 }
 
+int read_in_block(int inumber, void *buffer , size_t len , int block_id , int offset){
+    void *block = data_block_get(get_inode_block(inumber , block_id));
+    if (block == NULL) {
+        return -1;
+    }
+
+    /* Perform the actual read */
+    memcpy(buffer, block + offset, len);
+}
 
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     open_file_entry_t *file = get_open_file_entry(fhandle);
@@ -159,18 +166,36 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         to_read = len;
     }
 
-    if (to_read > 0) {
-        void *block = data_block_get(inode->i_data_block);
-        if (block == NULL) {
-            return -1;
-        }
-
-        /* Perform the actual read */
-        memcpy(buffer, block + file->of_offset, to_read);
-        /* The offset associated with the file handle is
-         * incremented accordingly */
-        file->of_offset += to_read;
+    if (file->of_offset + to_read >= MAXIMUM_FILE_BYTES) {
+        return -1;
     }
+
+    int read = 0;
+    while(to_read > read){
+        void *cur = buffer+read;
+        int to_read_block = to_read-read;
+
+        int block = file->of_offset/BLOCK_SIZE;
+        if(to_read_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE))
+            to_read_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
+        if(read_in_block(file->of_inumber, cur , to_read_block , block , file->of_offset % BLOCK_SIZE) == -1)
+            return -1;
+        
+        file->of_offset += to_read_block;
+        read += to_read_block;
+    }
+    // if (to_read > 0) {
+    //     void *block = data_block_get(inode->i_data_block);
+    //     if (block == NULL) {
+    //         return -1;
+    //     }
+
+    //     /* Perform the actual read */
+    //     memcpy(buffer, block + file->of_offset, to_read);
+    //     /* The offset associated with the file handle is
+    //      * incremented accordingly */
+    //     file->of_offset += to_read;
+    // }
 
     return (ssize_t)to_read;
 }

@@ -89,4 +89,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len);
 */ 
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path);
 
+#define MAXIMUM_FILE_BYTES (BLOCK_SIZE*(NUMBER_DIRECT_BLOCKS + BLOCK_SIZE))
+
 #endif // OPERATIONS_H
