@@ -136,8 +136,39 @@ int inode_create(inode_type n_type) {
     }
     return -1;
 }
+/*
+* Writes the content of a buffer to a block in the inode given by the inumber
+*
+* * Input:
+*      - inumber
+*      - buffer
+*      - len
+*      - block_id_of_inode
+*      - block_offset
+*
+*.Returns the number of bytes that were written from the buffer to the block
+*. (can be lower than 'len' if the file size was reached), or -1 if unsuccessful
+*/
+int inumber_block_alloc(int inumber){
+    if(!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || 
+        inode_table[inumber].i_size % BLOCK_SIZE) //not in the beginning of new block
+        return -1;
+    int block_id = inode_table[inumber].i_size/ BLOCK_SIZE;
+    if(block_id >= 10 + BLOCK_SIZE)
+        return -1;
+    if(block_id < 10)
+        inode_table[inumber].i_data_direct[block_id] = data_block_alloc();
+    else{
+        if(block_id == 10)
+            inode_table[inumber].i_data_indirect = data_block_alloc();
+        char *block = (char*) data_block_get(inode_table[inumber].i_data_indirect);
+        block[block_id-10] = (char*) data_block_alloc();
+    }
+    return block_id;
+}
+/*
 
-// -------
+*/
 int get_inode_block(int inumber, int id){
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || !valid_inode_block_number(id)) {
         return -1;

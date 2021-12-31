@@ -108,6 +108,8 @@ int write_to_block(int inumber, void *buffer , size_t len , int block_id , int b
     return len; // number of bytes that written 
 }
 
+
+/*
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
     //fhandle as the window e.g a google chrome tab 
@@ -120,7 +122,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         return -1;
     }
     
-    /* From the open file table entry, we get the inode */
+    // From the open file table entry, we get the inode 
     inode_t *inode = inode_get(file->of_inumber);
     if (inode == NULL) {
         return -1;
@@ -159,7 +161,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         // if((inode->i_size % BLOCK_SIZE) == 0)
         
         //if (inode->i_size == 0) {
-            /* If empty file, allocate new block */
+            /* If empty file, allocate new block 
         //    inode->i_data_block = data_block_alloc();
         //}
 
@@ -168,14 +170,13 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             //return -1;
         //}
 
-        /* Perform the actual write */
+        // Perform the actual write 
         //memcpy(block + file->of_offset, buffer, to_write);
 
 
         // ----------------------------------------------------
 
-        /* The offset associated with the file handle is
-         * incremented accordingly */
+        /// The offset associated with the file handle is incremented accordingly 
         file->of_offset += to_write;
         if (file->of_offset > inode->i_size) {
             inode->i_size = file->of_offset;
@@ -185,6 +186,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
     return (ssize_t)to_write;
 }
 
+*/
 
 int read_in_block(int inumber, void *buffer , size_t len , int block_id , int block_offset){
     void *block = data_block_get(get_inode_block(inumber , block_id));
@@ -242,10 +244,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
 int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
     
-
-    // opens a file
     FILE *fp = fopen(dest_path,"w");
-
 
     int fhandle,len;
     char *buffer;
@@ -256,9 +255,9 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
 
     fhandle = tfs_open(source_path,0);
     
-    // gets the file on the entry
+    // gets the file from the entry
     open_file_entry_t *file = get_open_file_entry(fhandle);
-    // obtains a pointer to the file's inode
+    // gets a pointer to the file's inode
     inode_t *inode = inode_get(file->of_inumber);
     
     
@@ -266,9 +265,12 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
     buffer = (char*)malloc(sizeof(char)*len);
 
     // given the buffer, our goal is to write the file contents to the buffer 
-    // and only later copy its contents to a file in the main OS
-
-    return (tfs_read(fhandle,buffer,len) != len ||\
-     fwrite(buffer,sizeof(char),sizeof(buffer),fp) != sizeof(buffer)) ? -1: 0;
-
+    // and only after copy its contents to a file in the main OS
+    if(tfs_read(fhandle,buffer,len) != len || \
+    fwrite(buffer,sizeof(char),sizeof(buffer),fp) != sizeof(buffer)) {
+         return -1;
+     } else {
+         free(buffer);
+         return 1;
+    }
 }
