@@ -257,7 +257,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 }
 
 
-int read_in_block(int inumber, void *buffer , size_t len , int block_id , int block_offset){
+ssize_t read_in_block(int inumber, void *buffer , size_t len , int block_id , int block_offset){
     void *block = data_block_get(get_inode_block(inumber , block_id));
     if (block == NULL) {
         return -1;
@@ -265,7 +265,7 @@ int read_in_block(int inumber, void *buffer , size_t len , int block_id , int bl
 
       /* Perform the actual read */
     memcpy(buffer, block + block_offset, len);
-    return len;
+    return (ssize_t) len;
 }
 
 
