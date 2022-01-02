@@ -216,7 +216,9 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
             // | 5th iteration ? the loop breaks 
             // 
-            int inode_block_id = inumber_block_alloc(file->of_inumber); 
+            int inode_block_id = (int) file->of_offset / BLOCK_SIZE;
+            if(file->of_offset == inode->i_size && inode->i_size % BLOCK_SIZE == 0)
+                inumber_block_alloc(file->of_inumber); 
 
             // NOTE: we have to continuously update the buffer
             // let's imagine the following buffer: [| |,| |,| |,| |,| |,| |,| |,| |,.......] 
@@ -230,9 +232,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             // number of bytes (to attempt) to write to a block
             size_t to_write_block = to_write - written;
 
-            if(to_write_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE)) {
+            if(to_write_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE))
                 to_write_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
-            }
             // NOTE: tries to write the buffer in the previously obtained inode block id
             ssize_t bytes_written_in_block = write_to_block(file->of_inumber, buffer_update, to_write_block, inode_block_id, file->of_offset % BLOCK_SIZE );
             if(bytes_written_in_block == -1) {
