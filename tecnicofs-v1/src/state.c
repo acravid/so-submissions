@@ -136,25 +136,21 @@ int inode_create(inode_type n_type) {
     }
     return -1;
 }
-/*
-* Writes the content of a buffer to a block in the inode given by the inumber
-*
-* * Input:
-*      - inumber
-*      - buffer
-*      - len
-*      - block_id_of_inode
-*      - block_offset
-*
-*.Returns the number of bytes that were written from the buffer to the block
-*. (can be lower than 'len' if the file size was reached), or -1 if unsuccessful
-*/
+
+/// ---
+/*  
+ *  given an inumber, this function allocates a new block at the global data region
+ *  associated to the given inode
+ * Input:
+ *  - inumber: i-node's number
+ * Returns: the index of the allocated block at the global data region, -1 if failed
+ */
 int inumber_block_alloc(int inumber){
     if(!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || 
         inode_table[inumber].i_size % BLOCK_SIZE) //not in the beginning of new block
         return -1;
-    int block_id = inode_table[inumber].i_size/ BLOCK_SIZE;
-    if(block_id >= 10 + BLOCK_SIZE)
+    int block_id = inode_table[inumber].i_size / BLOCK_SIZE;
+    if(block_id >= NUMBER_DIRECT_BLOCKS + BLOCK_SIZE)
         return -1;
     if(block_id < 10)
         inode_table[inumber].i_data_direct[block_id] = data_block_alloc();
@@ -166,9 +162,16 @@ int inumber_block_alloc(int inumber){
     }
     return block_id;
 }
-/*
 
-*/
+/// ---
+/*  
+ *  This function returns the index of a block at the global data region 
+ *  associated to the given inode
+ * Input:
+ *  - inumber: i-node's number
+ *  - inode's block number: the "index" of a block on the inode
+ * Returns: 0 if successful, -1 if failed
+ */
 int get_inode_block(int inumber, int id){
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || !valid_inode_block_number(id)) {
         return -1;
@@ -182,8 +185,14 @@ int get_inode_block(int inumber, int id){
 }
 
 
-// -------
-int truncate_file(int inumber){
+/// ---
+/*  As the name suggests, this function truncates a file, that is, empties its content.
+ *  For each previously allocated block, it frees it.
+ * Input:
+ *  - inumber: i-node's number
+ * Returns: 0 if successful, -1 if failed
+ */
+int truncate_file(int inumber) {
     if (!valid_inumber(inumber) || freeinode_ts[inumber] == FREE) {
         return -1;
     }
@@ -216,7 +225,8 @@ int inode_delete(int inumber) {
     }
 
     int return_value = truncate_file(inumber);
-    
+
+    // should we free the inode in case of error ? 
     freeinode_ts[inumber] = FREE;
 
     return return_value;
@@ -311,7 +321,7 @@ int find_in_dir(int inumber, char const *sub_name) {
 }
 
 /*
- * Allocated a new data block
+ * Allocates a new data block
  * Returns: block index if successful, -1 otherwise
  */
 int data_block_alloc() {
