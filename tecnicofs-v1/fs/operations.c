@@ -100,7 +100,7 @@ int tfs_open(char const *name, int flags) {
 int tfs_close(int fhandle) { return remove_from_open_file_table(fhandle); }
 
 
-int write_to_block(int inumber, void *buffer , size_t len , int block_id , int block_offset) {
+ssize_t write_to_block(int inumber, void *buffer , size_t len , int block_id , int block_offset) {
 
     void *block = data_block_get(get_inode_block(inumber , block_id));
     if (block == NULL) {
@@ -109,10 +109,12 @@ int write_to_block(int inumber, void *buffer , size_t len , int block_id , int b
 
       /* Perform the actual read */
     memcpy(block + block_offset,buffer,len);
-    return len; // number of bytes that  were written 
+    return (ssize_t)len; // number of bytes that  were written 
 }
 
 
+// TODO: 1:fix block_offset
+//       2:updates the buffer ? void const *  | and int
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
     open_file_entry_t *file = get_open_file_entry(fhandle);
@@ -143,9 +145,23 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         
         // this variable controls the total number of bytes of the buffer
         // we have already written
-        int written = 0;
+        size_t written = 0;
         while(to_write - written) { 
 
+            // TODO: 
+            // What if we already have pre allocated blocks
+
+            // file->offset onde é que altera 
+
+            // [[0][1][2][3][4][5]]            
+            // [[ABDJFJDGFDKGKDGDKGKDGKDKG][ABDJFJDGFDKGKDGDKGKDGKDKG][ABDJFJDGFDKGKDGDKGKDGKDKG][ABDJFJDGFDKGKDGDKGKDGKDKG][ABDJFJDGFDKGKDGDKGKDGKDKG]]
+            //  ?
+            // [dkgkdgnkongjrnorjgo5jrrWIOROHNOO3OMOTHIT5HK5HK5HOK5H5H5................................................................................]
+
+            // file->offset == inode->i_size e tamos prestes a começar um novo bloc
+
+            // inode->i_size 
+            // 
             //----------------------------------------------
             // a small walkthrough to verify the correctness 
             //----------------------------------------------
@@ -210,16 +226,16 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             // the changes
             // [| |,| |,| |,| |,| |,| |,| |,| |.......] 
             //                      ? start here ; next iteration
-            void *buffer_update = buffer + written; 
+            void *buffer_update = (void*)((char*)buffer + written); 
             // number of bytes (to attempt) to write to a block
-            int to_write_block = to_write - written;
+            size_t to_write_block = to_write - written;
             
 
             if(to_write_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE)) {
                 to_write_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
             }
             // NOTE: tries to write the buffer in the previously obtained inode block id
-            int bytes_written_in_block = write_to_block(file->of_inumber, buffer_update, to_write_block, inode_block_id, file->of_offset);
+            int bytes_written_in_block = write_to_block(file->of_inumber, buffer_update, to_write_block, inode_block_id, file->of_offset % BLOCK_SIZE );
             if(bytes_written_in_block == -1) {
                 return -1;
             } else { // if we were able to write a certain amount of bytes to a block then:
@@ -277,7 +293,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
     int read = 0;
     while(to_read > read) {
-        void *cur = buffer+read;
+        void *cur = (void*)((char*)buffer+read);
         int to_read_block = to_read-read;
 
         int block = file->of_offset/BLOCK_SIZE;

@@ -119,7 +119,7 @@ int read_in_block(int inumber, void *buffer , size_t len , int block_id , int bl
 *.Returns the number of bytes that were written from the buffer to the block
 *. (can be lower than 'len' if the file size was reached), or -1 if unsuccessful
 */
-int write_to_block(int inumber, void *buffer , size_t len , int block_id , int block_offset);
+ssize_t write_to_block(int inumber, void *buffer , size_t len , int block_id , int block_offset);
 
 #define MAXIMUM_FILE_BYTES (BLOCK_SIZE*(NUMBER_DIRECT_BLOCKS + BLOCK_SIZE))
 
