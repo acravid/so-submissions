@@ -24,7 +24,7 @@ int main() {
     FILE *fp = fopen(path2, "r");
 
     assert(fp != NULL);
-
+    
     assert(fread(to_read, sizeof(char), strlen(str), fp) == strlen(str));
     
     assert(strcmp(str, to_read) == 0);

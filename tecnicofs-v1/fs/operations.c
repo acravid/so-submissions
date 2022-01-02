@@ -229,7 +229,6 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
             void *buffer_update = (void*)((char*)buffer + written); 
             // number of bytes (to attempt) to write to a block
             size_t to_write_block = to_write - written;
-            
 
             if(to_write_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE)) {
                 to_write_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
@@ -246,10 +245,8 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                 file->of_offset += to_write_block;
                 // if we wrote past the the previous file size
                 // we need to update it
-                if (file->of_offset > inode->i_size) {
-
+                if (file->of_offset > inode->i_size)
                     inode->i_size = file->of_offset;
-                }   
             }
         }
     }  
@@ -262,7 +259,6 @@ ssize_t read_in_block(int inumber, void *buffer , size_t len , int block_id , in
     if (block == NULL) {
         return -1;
     }
-
       /* Perform the actual read */
     memcpy(buffer, block + block_offset, len);
     return (ssize_t) len;
@@ -318,7 +314,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
 
     int fhandle;
     size_t len;
-    char *buffer;
+    void *buffer;
 
     if(tfs_lookup(source_path) == -1 || fp == NULL){
         return -1;
@@ -333,15 +329,18 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
     
     
     len = inode->i_size;
-    buffer = (char*)malloc(sizeof(char)*len);
+    buffer = (void*)malloc(sizeof(char)*len);
 
     // given the buffer, our goal is to write the file contents to the buffer 
     // and only after copy its contents to a file in the main OS
-    if(tfs_read(fhandle,buffer,len) != len || \
-    fwrite(buffer,sizeof(char),sizeof(buffer),fp) != sizeof(buffer)) {
+
+    if(tfs_read(fhandle,buffer,len) != (ssize_t)len || \
+    fwrite(buffer,sizeof(char), len ,fp) != len) {
+        fclose(fp);
          return -1;
-     } else {
+    } else {
          free(buffer);
-         return 1;
+         fclose(fp);
+         return 0;
     }
 }
