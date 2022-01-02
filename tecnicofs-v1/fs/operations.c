@@ -291,12 +291,12 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
         return -1;
     }
 
-    int read = 0;
+    size_t read = 0;    
     while(to_read > read) {
         void *cur = (void*)((char*)buffer+read);
-        int to_read_block = to_read-read;
+        size_t to_read_block = to_read-read;
 
-        int block = file->of_offset/BLOCK_SIZE;
+        int block = (int) file->of_offset/BLOCK_SIZE;
         if(to_read_block > BLOCK_SIZE - (file->of_offset % BLOCK_SIZE))
             to_read_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
         if(read_in_block(file->of_inumber, cur , to_read_block , block , file->of_offset % BLOCK_SIZE) == -1)
