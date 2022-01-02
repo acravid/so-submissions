@@ -235,11 +235,11 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
                 to_write_block = BLOCK_SIZE - (file->of_offset % BLOCK_SIZE);
             }
             // NOTE: tries to write the buffer in the previously obtained inode block id
-            int bytes_written_in_block = write_to_block(file->of_inumber, buffer_update, to_write_block, inode_block_id, file->of_offset % BLOCK_SIZE );
+            ssize_t bytes_written_in_block = write_to_block(file->of_inumber, buffer_update, to_write_block, inode_block_id, file->of_offset % BLOCK_SIZE );
             if(bytes_written_in_block == -1) {
                 return -1;
             } else { // if we were able to write a certain amount of bytes to a block then:
-                written += bytes_written_in_block; // updates the total amount of bytes written so far
+                written = written + (size_t)bytes_written_in_block; // updates the total amount of bytes written so far
            
                 // The offset associated with the file handle is
                 //incremented accordingly 
