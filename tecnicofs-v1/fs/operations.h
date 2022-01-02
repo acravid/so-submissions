@@ -103,7 +103,7 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path);
 *.Returns the number of bytes that were copied from the file to the buffer
 *. (can be lower than 'len' if the file size was reached), or -1 if unsuccessful
 */
-int read_in_block(int inumber, void *buffer , size_t len , int block_id , int block_offset);
+ssize_t read_in_block(int inumber, void *buffer , size_t len , int block_id , int block_offset);
 
 
 /*

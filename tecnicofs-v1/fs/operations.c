@@ -316,7 +316,8 @@ int tfs_copy_to_external_fs(char const *source_path, char const *dest_path){
     
     FILE *fp = fopen(dest_path,"w");
 
-    int fhandle,len;
+    int fhandle;
+    size_t len;
     char *buffer;
 
     if(tfs_lookup(source_path) == -1 || fp == NULL){

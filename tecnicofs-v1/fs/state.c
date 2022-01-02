@@ -149,7 +149,7 @@ int inumber_block_alloc(int inumber){
     if(!valid_inumber(inumber) || freeinode_ts[inumber] == FREE || 
         inode_table[inumber].i_size % BLOCK_SIZE) //not in the beginning of new block
         return -1;
-    int block_id = inode_table[inumber].i_size / BLOCK_SIZE;
+    int block_id = (int)inode_table[inumber].i_size / BLOCK_SIZE;
     if(block_id >= NUMBER_DIRECT_BLOCKS + BLOCK_SIZE)
         return -1;
     if(block_id < 10)
@@ -158,7 +158,7 @@ int inumber_block_alloc(int inumber){
         if(block_id == 10)
             inode_table[inumber].i_data_indirect = data_block_alloc();
         char *block = (char*) data_block_get(inode_table[inumber].i_data_indirect);
-        block[block_id-10] = (char*) data_block_alloc();
+        block[block_id-10] = (char)data_block_alloc();
     }
     return block_id;
 }
