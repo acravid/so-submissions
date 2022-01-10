@@ -120,7 +120,25 @@ ssize_t read_in_block(int inumber, void *buffer , size_t len , int block_id , in
 *. (can be lower than 'len' if the file size was reached), or -1 if unsuccessful
 */
 ssize_t write_to_block(int inumber, void *buffer , size_t len , int block_id , int block_offset);
-
+/*
+*  Releases any resources used by the locks, destroys all locks that were previously
+*  created
+*
+*. Returns : nothing
+*/
+void locks_destroy();
+/*
+*  Initializes arrays of locks
+*
+*.Returns 0 if successful, -1 otherwise.
+*/
+int locks_bundle_init();
+/*
+*  Initializes locks | standard
+*
+*.Returns 0 if successful, -1 otherwise.
+*/
+int locks_init();
 #define MAXIMUM_FILE_BYTES (BLOCK_SIZE*(NUMBER_DIRECT_BLOCKS + BLOCK_SIZE))
 
 #endif // OPERATIONS_H

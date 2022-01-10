@@ -5,19 +5,90 @@
 #include <string.h>
 #include <pthread.h>
 
-pthread_rwlock_t lock_blocks, lock_fhandle[MAX_OPEN_FILES], lock_inumber[INODE_TABLE_SIZE];
+pthread_rwlock_t lock_blocks;
+pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES];
+pthread_rwlock_t lock_inumber[INODE_TABLE_SIZE];
+pthread_rwlock_t lock_inumber_all;
+pthread_rwlock_t lock_fhandle_all;
 
-void lock_wr_all(pthread_rwlock_t * table , int size){
+
+
+
+// TODO: fix lock_wr_all; unlock_all
+// use lock_inumber_all; lock_fhanlde_all
+
+// Instead of blocking all inumbers or fhandles
+// one by one, we can block all inumbers/fhandles
+
+
+
+/*void lock_wr_all(pthread_rwlock_t * table , int size){
     for(int i = 0 ; i < size ; i++)
         pthread_rwlock_wrlock(&table[i]);
 }
 void unlock_all(pthread_rwlock_t * table , int size){
     for(int i = 0 ; i < size ; i++)
         pthread_rwlock_unlock(&table[i]);
+} */
+
+void locks_destroy() {
+    pthread_rwlock_destroy(&lock_blocks);
+    pthread_rwlock_destroy(&lock_inumber_all);
+    pthread_rwlock_destroy(&lock_fhandle_all);
+
+    for(int i = 0; i < MAX_OPEN_FILES; i++) {
+        pthread_rwlock_destroy(&lock_fhandle[i]);
+    }
+
+    for(int i = 0; i < INODE_TABLE_SIZE; i++) {
+        pthread_rwlock_destroy(&lock_inumber[i]);
+    }
 }
 
 
+int locks_bundle_init() {
+
+    for(int i = 0; i < MAX_OPEN_FILES; i++) {
+        if(pthread_rwlock_init(&lock_fhandle[i],NULL) != 0) {
+            return -1;
+        }
+    }
+
+    for(int i = 0; i < INODE_TABLE_SIZE; i++) {
+        if(pthread_rwlock_init(&lock_inumber[i],NULL) != 0) {
+            return -1;
+        }
+    }
+
+    // if all initializations were successful
+    return 0;
+}
+
+int locks_init() {
+
+    int return_value = 0;
+    return_value = locks_bundle_init();
+    if(return_value = -1) {
+        return return_value;
+    } else {
+        if(pthread_rwlock_init(&lock_blocks,NULL) != 0 || \
+        pthread_rwlock_init(&lock_inumber_all,NULL) != 0  || \ 
+        pthread_rwlock_init(&lock_fhandle_all, NULL) != 0 ) {
+            return -1;
+        } 
+        return return_value;
+    }
+    return return_value;
+}
+
+    
+
 int tfs_init() {
+
+    // initialize all locks
+    if(locks_init() != 0 || locks_bundle_init() != 0) {
+        return -1;
+    }
     state_init();
 
     /* create root inode */
@@ -31,6 +102,8 @@ int tfs_init() {
 
 
 int tfs_destroy() {
+    
+    locks_destroy();
     state_destroy();
     return 0;
 }
@@ -97,9 +170,11 @@ int tfs_open(char const *name, int flags) {
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
+        // -- FIX
         lock_wr_all(lock_inumber , INODE_TABLE_SIZE);
         inum = inode_create(T_FILE);
         if (inum == -1) {
+            // -- FIX
             unlock_all(lock_inumber , INODE_TABLE_SIZE);
             return -1;
         }
@@ -107,10 +182,12 @@ int tfs_open(char const *name, int flags) {
         /* Add entry in the root directory */
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             inode_delete(inum);
+            // -- FIX
             unlock_all(lock_inumber , INODE_TABLE_SIZE);
             pthread_rwlock_unlock(&lock_blocks);
             return -1;
         }
+        // -- FIX
         unlock_all(lock_inumber , INODE_TABLE_SIZE);
         pthread_rwlock_unlock(&lock_blocks);
         offset = 0;
@@ -120,8 +197,10 @@ int tfs_open(char const *name, int flags) {
 
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
+    // -- FIX
     lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
     int return_val = add_to_open_file_table(inum, offset);
+    // -- FIX
     unlock_all(lock_fhandle , MAX_OPEN_FILES);
     return return_val;
 
@@ -132,8 +211,10 @@ int tfs_open(char const *name, int flags) {
 
 
 int tfs_close(int fhandle) { 
+    // -- FIX
     lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
     int return_val = remove_from_open_file_table(fhandle); 
+    // -- FIX
     unlock_all(lock_fhandle , MAX_OPEN_FILES);
     return return_val;
 }
