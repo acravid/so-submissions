@@ -65,7 +65,7 @@ int locks_init() {
 
     int return_value = 0;
     return_value = locks_bundle_init();
-    if(return_value = -1) {
+    if(return_value == -1) {
         return return_value;
     } else {
         if(pthread_rwlock_init(&lock_blocks,NULL) != 0 || \
