@@ -5,12 +5,8 @@
 #include <string.h>
 #include <pthread.h>
 
-pthread_rwlock_t lock_blocks;
-pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES];
-pthread_rwlock_t lock_inumber[INODE_TABLE_SIZE];
-pthread_rwlock_t lock_inumber_all;
-pthread_rwlock_t lock_fhandle_all;
-
+pthread_rwlock_t lock_blocks, lock_inumber_all, lock_fhandle_all;
+pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES], lock_inumber[INODE_TABLE_SIZE];
 
 
 
@@ -32,6 +28,7 @@ void unlock_all(pthread_rwlock_t * table , int size){
 } */
 
 void locks_destroy() {
+    
     pthread_rwlock_destroy(&lock_blocks);
     pthread_rwlock_destroy(&lock_inumber_all);
     pthread_rwlock_destroy(&lock_fhandle_all);
