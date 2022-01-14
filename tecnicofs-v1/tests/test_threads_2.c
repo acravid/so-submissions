@@ -8,6 +8,7 @@
 #define SIZE 256
 
 void* routine_2() {
+
     char *path = "/f1";
 
     /* Writing this buffer multiple times to a file stored on 1KB blocks will 
@@ -36,10 +37,8 @@ void* routine_2() {
     }
 
     assert(tfs_close(fd) != -1);
-    
+    return 0;
 }
-
-
 
 
 int main(void ) {

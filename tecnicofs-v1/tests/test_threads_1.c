@@ -4,9 +4,6 @@
 #include <assert.h>
 #include <string.h>
 
-#define COUNT 80
-#define SIZE 256
-
 void* routine_1() {
 
     char *str = "AAA!";
