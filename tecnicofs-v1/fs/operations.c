@@ -9,25 +9,6 @@ pthread_rwlock_t lock_blocks, lock_allock, lock_fhandle_all;
 pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES], lock_inumber[INODE_TABLE_SIZE];
 
 
-
-// TODO: fix lock_wr_all; unlock_all
-// use lock_allock; lock_fhanlde_all
-
-// Instead of blocking all inumbers or fhandles
-// one by one, we can block all inumbers/fhandles
-
-
-
-/*void lock_wr_all(pthread_rwlock_t * table , int size){
-    for(int i = 0 ; i < size ; i++)
-        pthread_rwlock_wrlock(&table[i]);
-}
-void unlock_all(pthread_rwlock_t * table , int size){
-    for(int i = 0 ; i < size ; i++)
-        pthread_rwlock_unlock(&table[i]);
-} 
-*/
-
 void locks_destroy() {
     
     pthread_rwlock_destroy(&lock_blocks);
@@ -57,8 +38,7 @@ int locks_bundle_init() {
             return -1;
         }
     }
-
-    // if all initializations were successful
+    
     return 0;
 }
 
@@ -67,14 +47,13 @@ int locks_init() {
     int return_value = 0;
     return_value = locks_bundle_init();
     if(return_value == -1) {
-        return return_value;
+        return -1; 
     } else {
         if(pthread_rwlock_init(&lock_blocks,NULL) != 0|| \
         pthread_rwlock_init(&lock_allock,NULL)!= 0 || \
         pthread_rwlock_init(&lock_fhandle_all, NULL) != 0) {
             return -1;
         } 
-        return return_value;
     }
     return return_value;
 }
