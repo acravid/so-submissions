@@ -14,7 +14,8 @@ INCLUDES = $(addprefix -I, $(INCLUDE_DIRS))
 SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
-TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/test_threads_1
+TARGET_EXECS := tests/test1 tests/copy_to_external_simple tests/copy_to_external_errors tests/write_10_blocks_spill tests/write_10_blocks_simple tests/write_more_than_10_blocks_simple tests/test_threads_1 tests/test_threads_2 \
+tests/test_threads_3
 
 # VPATH is a variable used by Makefile which finds *sources* and makes them available throughout the codebase
 # vpath %.h <DIR> tells make to look for header files in <DIR>
@@ -23,7 +24,7 @@ vpath %.h $(INCLUDE_DIRS)
  
 CFLAGS = -std=c11 -D_POSIX_C_SOURCE=200809L -fsanitize=thread 
 CFLAGS += $(INCLUDES)
-LDFLAGS += -pthread .Returns 0 if successful, -1 otherwise.
+LDFLAGS += -pthread -fsanitize=thread 
 
 # Warnings
 CFLAGS += -fdiagnostics-color=always -Wall -Werror -Wextra -Wcast-align -Wconversion -Wfloat-equal -Wformat=2 -Wnull-dereference -Wshadow -Wsign-conversion -Wswitch-default -Wswitch-enum -Wundef -Wunreachable-code -Wunused
@@ -72,7 +73,8 @@ tests/write_10_blocks_spill: tests/write_10_blocks_spill.o fs/operations.o fs/st
 tests/write_10_blocks_simple: tests/write_10_blocks_simple.o fs/operations.o fs/state.o
 tests/write_more_than_10_blocks_simple: tests/write_more_than_10_blocks_simple.o fs/operations.o fs/state.o
 tests/test_threads_1: tests/test_threads_1.o fs/operations.o fs/state.o
-
+tests/test_threads_2: tests/test_threads_2.o fs/operations.o fs/state.o
+tests/test_threads_3: tests/test_threads_3.o fs/operations.o fs/state.o
 
 clean:
 	rm -f $(OBJECTS) $(TARGET_EXECS)

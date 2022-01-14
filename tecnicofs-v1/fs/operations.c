@@ -5,13 +5,13 @@
 #include <string.h>
 #include <pthread.h>
 
-pthread_rwlock_t lock_blocks, lock_inumber_all, lock_fhandle_all;
+pthread_rwlock_t lock_blocks, lock_allock, lock_fhandle_all;
 pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES], lock_inumber[INODE_TABLE_SIZE];
 
 
 
 // TODO: fix lock_wr_all; unlock_all
-// use lock_inumber_all; lock_fhanlde_all
+// use lock_allock; lock_fhanlde_all
 
 // Instead of blocking all inumbers or fhandles
 // one by one, we can block all inumbers/fhandles
@@ -25,12 +25,13 @@ pthread_rwlock_t lock_fhandle[MAX_OPEN_FILES], lock_inumber[INODE_TABLE_SIZE];
 void unlock_all(pthread_rwlock_t * table , int size){
     for(int i = 0 ; i < size ; i++)
         pthread_rwlock_unlock(&table[i]);
-} */
+} 
+*/
 
 void locks_destroy() {
     
     pthread_rwlock_destroy(&lock_blocks);
-    pthread_rwlock_destroy(&lock_inumber_all);
+    pthread_rwlock_destroy(&lock_allock);
     pthread_rwlock_destroy(&lock_fhandle_all);
 
     for(int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -68,9 +69,9 @@ int locks_init() {
     if(return_value == -1) {
         return return_value;
     } else {
-        if(pthread_rwlock_init(&lock_blocks,NULL) != 0 || \
-        pthread_rwlock_init(&lock_inumber_all,NULL) != 0  || \ 
-        pthread_rwlock_init(&lock_fhandle_all, NULL) != 0 ) {
+        if(pthread_rwlock_init(&lock_blocks,NULL) != 0|| \
+        pthread_rwlock_init(&lock_allock,NULL)!= 0 || \
+        pthread_rwlock_init(&lock_fhandle_all, NULL) != 0) {
             return -1;
         } 
         return return_value;
@@ -167,25 +168,21 @@ int tfs_open(char const *name, int flags) {
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
-        // -- FIX
-        lock_wr_all(lock_inumber , INODE_TABLE_SIZE);
+        pthread_rwlock_wrlock(&lock_allock);
         inum = inode_create(T_FILE);
         if (inum == -1) {
-            // -- FIX
-            unlock_all(lock_inumber , INODE_TABLE_SIZE);
+            pthread_rwlock_unlock(&lock_allock);
             return -1;
         }
         pthread_rwlock_wrlock(&lock_blocks);
         /* Add entry in the root directory */
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             inode_delete(inum);
-            // -- FIX
-            unlock_all(lock_inumber , INODE_TABLE_SIZE);
+            pthread_rwlock_unlock(&lock_allock);
             pthread_rwlock_unlock(&lock_blocks);
             return -1;
         }
-        // -- FIX
-        unlock_all(lock_inumber , INODE_TABLE_SIZE);
+        pthread_rwlock_unlock(&lock_allock);
         pthread_rwlock_unlock(&lock_blocks);
         offset = 0;
     } else {
@@ -194,11 +191,9 @@ int tfs_open(char const *name, int flags) {
 
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
-    // -- FIX
-    lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_wrlock(&lock_fhandle_all);
     int return_val = add_to_open_file_table(inum, offset);
-    // -- FIX
-    unlock_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_unlock(&lock_fhandle_all);
     return return_val;
 
     /* Note: for simplification, if file was created with TFS_O_CREAT and there
@@ -208,11 +203,9 @@ int tfs_open(char const *name, int flags) {
 
 
 int tfs_close(int fhandle) { 
-    // -- FIX
-    lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_wrlock(&lock_fhandle_all);
     int return_val = remove_from_open_file_table(fhandle); 
-    // -- FIX
-    unlock_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_unlock(&lock_fhandle_all);
     return return_val;
 }
 
@@ -230,8 +223,6 @@ ssize_t write_to_block(int inumber, void *buffer , size_t len , int block_id , i
 }
 
 
-// TODO: 1:fix block_offset
-//       2:updates the buffer ? void const *  | and int
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
     if(fhandle < 0 || fhandle >= MAX_OPEN_FILES)
@@ -248,7 +239,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
         pthread_rwlock_unlock(&lock_fhandle[fhandle]);
         return -1;
     }
-    pthread_rwlock_rdlock(&lock_inumber[file->of_inumber]);
+    pthread_rwlock_wrlock(&lock_inumber[file->of_inumber]);
     
     /* From the open file table entry, we get the inode */
     inode_t *inode = inode_get(file->of_inumber);
