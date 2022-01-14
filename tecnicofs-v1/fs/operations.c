@@ -68,9 +68,9 @@ int locks_init() {
     if(return_value == -1) {
         return return_value;
     } else {
-        if(pthread_rwlock_init(&lock_blocks,NULL) != 0 || \
-        pthread_rwlock_init(&lock_inumber_all,NULL) != 0  || \ 
-        pthread_rwlock_init(&lock_fhandle_all, NULL) != 0 ) {
+        if(pthread_rwlock_init(&lock_blocks,NULL) != 0|| \
+        pthread_rwlock_init(&lock_inumber_all,NULL)!= 0 || \
+        pthread_rwlock_init(&lock_fhandle_all, NULL) != 0) {
             return -1;
         } 
         return return_value;
@@ -167,25 +167,21 @@ int tfs_open(char const *name, int flags) {
     } else if (flags & TFS_O_CREAT) {
         /* The file doesn't exist; the flags specify that it should be created*/
         /* Create inode */
-        // -- FIX
-        lock_wr_all(lock_inumber , INODE_TABLE_SIZE);
+        pthread_rwlock_wrlock(&lock_inumber_all);
         inum = inode_create(T_FILE);
         if (inum == -1) {
-            // -- FIX
-            unlock_all(lock_inumber , INODE_TABLE_SIZE);
+            pthread_rwlock_unlock(&lock_inumber_all);
             return -1;
         }
         pthread_rwlock_wrlock(&lock_blocks);
         /* Add entry in the root directory */
         if (add_dir_entry(ROOT_DIR_INUM, inum, name + 1) == -1) {
             inode_delete(inum);
-            // -- FIX
-            unlock_all(lock_inumber , INODE_TABLE_SIZE);
+            pthread_rwlock_unlock(&lock_inumber_all);
             pthread_rwlock_unlock(&lock_blocks);
             return -1;
         }
-        // -- FIX
-        unlock_all(lock_inumber , INODE_TABLE_SIZE);
+        pthread_rwlock_unlock(&lock_inumber_all);
         pthread_rwlock_unlock(&lock_blocks);
         offset = 0;
     } else {
@@ -194,11 +190,9 @@ int tfs_open(char const *name, int flags) {
 
     /* Finally, add entry to the open file table and
      * return the corresponding handle */
-    // -- FIX
-    lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_wrlock(&lock_inumber_all);
     int return_val = add_to_open_file_table(inum, offset);
-    // -- FIX
-    unlock_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_unlock(&lock_inumber_all);
     return return_val;
 
     /* Note: for simplification, if file was created with TFS_O_CREAT and there
@@ -208,11 +202,9 @@ int tfs_open(char const *name, int flags) {
 
 
 int tfs_close(int fhandle) { 
-    // -- FIX
-    lock_wr_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_wrlock(&lock_fhandle_all);
     int return_val = remove_from_open_file_table(fhandle); 
-    // -- FIX
-    unlock_all(lock_fhandle , MAX_OPEN_FILES);
+    pthread_rwlock_unlock(&lock_fhandle_all);
     return return_val;
 }
 
@@ -230,8 +222,6 @@ ssize_t write_to_block(int inumber, void *buffer , size_t len , int block_id , i
 }
 
 
-// TODO: 1:fix block_offset
-//       2:updates the buffer ? void const *  | and int
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
     if(fhandle < 0 || fhandle >= MAX_OPEN_FILES)
