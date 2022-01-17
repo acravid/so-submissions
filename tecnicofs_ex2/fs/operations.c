@@ -52,7 +52,6 @@ int tfs_destroy_after_all_closed() {
         return -1;
     while(number_open_files != 0)
         pthread_cond_wait(&check_open_files, &open_files_lock);
-    printf("OPENFILES = %d\n", number_open_files);
     if (pthread_mutex_unlock(&open_files_lock) != 0)
         return -1;
     tfs_destroy();
@@ -142,7 +141,6 @@ int tfs_open(char const *name, int flags) {
     if (pthread_mutex_lock(&open_files_lock) != 0)
         return -1;
     number_open_files++;
-    printf("OPEN\n");
     if(pthread_mutex_unlock(&open_files_lock) != 0)
         return -1;
     return ret;
