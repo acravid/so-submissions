@@ -6,18 +6,25 @@
 #include <string.h>
 
 static pthread_mutex_t single_global_lock;
+static pthread_mutex_t open_files_lock;
+static pthread_cond_t check_open_files;
+static int number_open_files;
 
 int tfs_init() {
     state_init();
 
     if (pthread_mutex_init(&single_global_lock, 0) != 0)
         return -1;
-
+    if (pthread_mutex_init(&open_files_lock, 0) != 0)
+        return -1;
+    if (pthread_cond_init(&check_open_files, 0) != 0)
+        return -1;
     /* create root inode */
     int root = inode_create(T_DIRECTORY);
     if (root != ROOT_DIR_INUM) {
         return -1;
     }
+    number_open_files = 0;
 
     return 0;
 }
@@ -25,6 +32,12 @@ int tfs_init() {
 int tfs_destroy() {
     state_destroy();
     if (pthread_mutex_destroy(&single_global_lock) != 0) {
+        return -1;
+    }
+    if (pthread_mutex_destroy(&open_files_lock) != 0) {
+        return -1;
+    }
+    if (pthread_cond_destroy(&check_open_files) != 0) {
         return -1;
     }
     return 0;
@@ -35,7 +48,14 @@ static bool valid_pathname(char const *name) {
 }
 
 int tfs_destroy_after_all_closed() {
-    /* TO DO: implement this */
+    if (pthread_mutex_lock(&open_files_lock) != 0)
+        return -1;
+    while(number_open_files != 0)
+        pthread_cond_wait(&check_open_files, &open_files_lock);
+    printf("OPENFILES = %d\n", number_open_files);
+    if (pthread_mutex_unlock(&open_files_lock) != 0)
+        return -1;
+    tfs_destroy();
     return 0;
 }
 
@@ -118,7 +138,13 @@ int tfs_open(char const *name, int flags) {
     int ret = _tfs_open_unsynchronized(name, flags);
     if (pthread_mutex_unlock(&single_global_lock) != 0)
         return -1;
-
+    
+    if (pthread_mutex_lock(&open_files_lock) != 0)
+        return -1;
+    number_open_files++;
+    printf("OPEN\n");
+    if(pthread_mutex_unlock(&open_files_lock) != 0)
+        return -1;
     return ret;
 }
 
@@ -129,6 +155,12 @@ int tfs_close(int fhandle) {
     if (pthread_mutex_unlock(&single_global_lock) != 0)
         return -1;
 
+    if (pthread_mutex_lock(&open_files_lock) != 0)
+        return -1;
+    number_open_files--;
+    pthread_cond_signal(&check_open_files);
+    if(pthread_mutex_unlock(&open_files_lock) != 0)
+        return -1;
     return r;
 }
 
