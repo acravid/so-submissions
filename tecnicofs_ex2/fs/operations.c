@@ -13,11 +13,11 @@ static int number_open_files;
 int tfs_init() {
     state_init();
 
-    if (pthread_mutex_init(&single_global_lock, 0) != 0)
+    if (pthread_mutex_init(&single_global_lock, NULL) != 0)
         return -1;
-    if (pthread_mutex_init(&open_files_lock, 0) != 0)
+    if (pthread_mutex_init(&open_files_lock, NULL) != 0)
         return -1;
-    if (pthread_cond_init(&check_open_files, 0) != 0)
+    if (pthread_cond_init(&check_open_files, NULL) != 0)
         return -1;
     /* create root inode */
     int root = inode_create(T_DIRECTORY);

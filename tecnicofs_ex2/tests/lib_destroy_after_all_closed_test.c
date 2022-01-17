@@ -21,6 +21,7 @@ void *fn_thread(void *arg) {
     (void)
         arg; /* Since arg is not used, this line prevents a compiler warning */
 
+
     sleep(10);
 
     /* set *before* closing the file, so that it is set before
