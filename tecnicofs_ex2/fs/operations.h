@@ -5,6 +5,8 @@
 #include "config.h"
 #include "state.h"
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 /*
  * Initializes tecnicofs
