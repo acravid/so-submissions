@@ -76,12 +76,12 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
     strcpy(buffer+1 , client_pipe_path);
 
     if(send_to_server(fserver,buffer, sizeof(char)*(MAX_PIPE_LEN + 1)) != sizeof(char)*(MAX_PIPE_LEN + 1)) {
-        perror("client: error mounting");
+        perror("client in tfs_mount: error sending request to server");
         return -1;
     }
     
     if(receive_from_server(fclient,buffer,sizeof(int)) != sizeof(int)) {
-        perror("client: error re mounting");
+        perror("client in tfs_mount: error receiving from server");
         return -1;
     }
 
@@ -97,7 +97,7 @@ int tfs_unmount() {
     ((int*) ((char*)buffer)+1)[0] = session_id;
 
     if(send_to_server(fserver, buffer, sizeof(char) + sizeof(int)) != (sizeof(char) + sizeof(int))) {
-        perror("client: tfs:unmount: error sending request to server");
+        perror("client in tfs_unmount: error sending request to server");
         return -1;
     }
 
@@ -189,7 +189,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     }
 
     return written_bytes;
-    
+
 }
 
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
