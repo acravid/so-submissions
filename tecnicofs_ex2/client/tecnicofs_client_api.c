@@ -2,11 +2,11 @@
 #include "fs/tfs_server.h"
 #include <errno.h>
 
-#define MAX_PIPE_LEN 40
+
 int session_id = -1,fclient = -1, fserver = -1;
 
 
-size_t send_to_server(void *buffer,int fd, size_t number_of_bytes) {
+size_t send_to_server(int fd,void *buffer, size_t number_of_bytes) {
 
     size_t written_bytes = 0;
     
@@ -28,7 +28,7 @@ size_t send_to_server(void *buffer,int fd, size_t number_of_bytes) {
 }
 
 
-size_t read_from_server(void* buffer,int fd,size_t number_of_bytes) {
+size_t receive_from_server(int fd,void* buffer,size_t number_of_bytes) {
 
     size_t read_bytes = 0;
     int interrupted = 1;
@@ -75,13 +75,13 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
     ((char*) buffer)[0] = MOUNT;
     strcpy(buffer+1 , client_pipe_path);
 
-    if(send_to_server(buffer,fserver, sizeof(char)*(MAX_PIPE_LEN + 1)) != sizeof(char)*(MAX_PIPE_LEN + 1)) {
+    if(send_to_server(fserver,buffer, sizeof(char)*(MAX_PIPE_LEN + 1)) != sizeof(char)*(MAX_PIPE_LEN + 1)) {
         perror("client: error mounting");
         return -1;
     }
     
-    if(read_from_server(fclient,buffer,sizeof(int)) != sizeof(int)) {
-        perror("client: error mounting");
+    if(receive_from_server(fclient,buffer,sizeof(int)) != sizeof(int)) {
+        perror("client: error re mounting");
         return -1;
     }
 
@@ -91,39 +91,53 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 }
 
 int tfs_unmount() {
+
     void *buffer = malloc(sizeof(char) + sizeof(int));
     ((char*)buffer)[0] = UNMOUNT;
     ((int*) ((char*)buffer)+1)[0] = session_id;
 
-    if(write(fserver , buffer , sizeof(char)+sizeof(int)) <= 0)
+    if(send_to_server(fserver, buffer, sizeof(char) + sizeof(int)) != (sizeof(char) + sizeof(int))) {
+        perror("client: tfs:unmount: error sending request to server");
         return -1;
+    }
 
     close(fserver);
     close(fclient);
-    return -1;
+
+    return 0;
 }
 
 int tfs_open(char const *name, int flags) {
-    void *buffer = malloc(41*sizeof(char)+ 2*sizeof(int) );
+    
+    void *buffer = malloc((MAX_PIPE_LEN + 1)* sizeof(char) + 2 * sizeof(int));
     void *last_pos = buffer;
     ((char*)last_pos)[0] = OPEN;
     last_pos = (void*)(((char*)last_pos) + 1);
     ((int*)last_pos)[0] = session_id;
     last_pos = (void*)(((int*)last_pos) + 1);
-    memcpy( buffer , name , 40);
-    last_pos = (void*)(((char*)last_pos) + 40);
+    memcpy( buffer , name , MAX_PIPE_LEN);
+    last_pos = (void*)(((char*)last_pos) + MAX_PIPE_LEN);
     ((int*)last_pos)[0] = flags;
 
-    if(write(fserver, buffer , 41*sizeof(char)+2*sizeof(int)) <= 0)
-        return -1;
     
-    if(read(fclient , buffer , sizeof(int)) <= 0)
+    if(send_to_server(buffer,fserver,(MAX_PIPE_LEN + 1) * sizeof(char) + 2 * sizeof(int)) != (MAX_PIPE_LEN + 1) * sizeof(char) + 2 * sizeof(int)) {
+        perror("client in tfs_open: error sending request to server ");
         return -1;
-    return -1;
+    }
+
+    if(receive_from_server(buffer,fclient,sizeof(int)) != sizeof(int)) {
+        perror("client in tfs_open: error receiving from server");
+        return -1;
+    }
+   
+    // TODO !!
+    // tfs_open specification what does it return ?
+    return -1 ;
 }
 
 int tfs_close(int fhandle) {
-    void *buffer = malloc(sizeof(char)+ 2*sizeof(int) );
+
+    void *buffer = malloc(sizeof(char) + 2 * sizeof(int));
     void *last_pos = buffer;
     ((char*)last_pos)[0] = CLOSE;
     last_pos = (void*)(((char*)last_pos) + 1);
@@ -131,15 +145,26 @@ int tfs_close(int fhandle) {
     last_pos = (void*)(((int*)last_pos) + 1);
     ((int*)last_pos)[0] = fhandle;
 
-    if(write(fserver, buffer ,sizeof(char)+ 2*sizeof(int) ) <= 0)
+    if(send_to_server(fserver,buffer, sizeof(char) + 2 * sizeof(int)) != (sizeof(char) + 2 * sizeof(int))) {
+        perror("client in tfs_close: error sending request to server");
         return -1;
+
+    }
+
+    if(receive_from_server(fclient,buffer,sizeof(int)) != (sizeof(int))) {
+        perror("client in tfs_close: error receiving from server");
+        return -1;
+    }
     
-    if(read(fclient , buffer , sizeof(int)) <= 0)
-        return -1;
-    return -1;
+    // TODO !!
+    // tfs_open specification what does it return ?
+    // is there more to more to verify ?
+    return 0;
+
 }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
+
     void *command = malloc((1+len)*sizeof(char)+ 3*sizeof(int) );
     void *last_pos = command;
     ((char*)last_pos)[0] = WRITE;
@@ -150,15 +175,21 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     last_pos = (void*)(((int*)last_pos) + 1);
     ((size_t*)last_pos)[0] = fhandle;
     last_pos = (void*)(((size_t*)last_pos) + 1);
-
     memcpy(command , buffer , len);
-    if(write(fserver, command ,(1+len)*sizeof(char)+ 3*sizeof(int) ) <= 0)
-        return -1;
-    
-    if(read(fclient , command , sizeof(int)) <= 0)
+
+    if(send_to_server(fserver,command,(1 + len) * sizeof(char) + 3 * sizeof(int)) != ((1 + len) * sizeof(char) + 3 * sizeof(int))) {
+        perror("client in tfs_write: error sending request to server");
         return -1;
 
-    return -1;
+    }
+    size_t written_bytes = 0;
+    if(written_bytes = receive_from_server(fclient,command, sizeof(int)) != sizeof(int)) { // should it be sizeof(size_t) here
+        perror("client in tfs_write: error receiving from the server");
+        return -1;
+    }
+
+    return written_bytes;
+    
 }
 
 ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
