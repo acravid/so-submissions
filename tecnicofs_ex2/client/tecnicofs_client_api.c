@@ -1,8 +1,40 @@
 #include "tecnicofs_client_api.h"
 #include "fs/tfs_server.h"
+#include <errno.h>
 
 #define MAX_PIPE_LEN 40
 int session_id = -1,fclient = -1, fserver = -1;
+
+size_t send_to_server(void *buffer,int fd, size_t number_of_bytes) {
+
+    int return_value = 1;
+    size_t written_bytes = 0;
+    
+    while(written_bytes < number_of_bytes) {
+        size_t already_sent = write(fd,buffer,number_of_bytes - written_bytes);
+
+        if(already_sent == -1){
+            if(errno == EINTR) { 
+                continue;
+            } else {
+                return -1;
+            }
+        }
+        written_bytes += already_sent;
+    }
+
+    return written_bytes;
+
+}
+
+
+size_t read_from_server() {
+
+
+
+
+
+}
 
 int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 
@@ -44,7 +76,7 @@ int tfs_unmount() {
 int tfs_open(char const *name, int flags) {
     void *buffer = malloc(41*sizeof(char)+ 2*sizeof(int) );
     void *last_pos = buffer;
-    ((char*)last_pos)[0] = '3';
+    ((char*)last_pos)[0] = OPEN;
     last_pos = (void*)(((char*)last_pos) + 1);
     ((int*)last_pos)[0] = session_id;
     last_pos = (void*)(((int*)last_pos) + 1);
@@ -63,7 +95,7 @@ int tfs_open(char const *name, int flags) {
 int tfs_close(int fhandle) {
     void *buffer = malloc(sizeof(char)+ 2*sizeof(int) );
     void *last_pos = buffer;
-    ((char*)last_pos)[0] = '4';
+    ((char*)last_pos)[0] = CLOSE;
     last_pos = (void*)(((char*)last_pos) + 1);
     ((int*)last_pos)[0] = session_id;
     last_pos = (void*)(((int*)last_pos) + 1);
@@ -80,7 +112,7 @@ int tfs_close(int fhandle) {
 ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     void *command = malloc((1+len)*sizeof(char)+ 3*sizeof(int) );
     void *last_pos = command;
-    ((char*)last_pos)[0] = '5';
+    ((char*)last_pos)[0] = WRITE;
     last_pos = (void*)(((char*)last_pos) + 1);
     ((int*)last_pos)[0] = session_id;
     last_pos = (void*)(((int*)last_pos) + 1);
