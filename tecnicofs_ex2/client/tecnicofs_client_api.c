@@ -5,9 +5,9 @@
 #define MAX_PIPE_LEN 40
 int session_id = -1,fclient = -1, fserver = -1;
 
+
 size_t send_to_server(void *buffer,int fd, size_t number_of_bytes) {
 
-    int return_value = 1;
     size_t written_bytes = 0;
     
     while(written_bytes < number_of_bytes) {
@@ -28,33 +28,63 @@ size_t send_to_server(void *buffer,int fd, size_t number_of_bytes) {
 }
 
 
-size_t read_from_server() {
+size_t read_from_server(void* buffer,int fd,size_t number_of_bytes) {
 
+    size_t read_bytes = 0;
+    int interrupted = 1;
 
+    while(interrupted) {
+        size_t already_read = read(fd,buffer,number_of_bytes - read_bytes);
+        interrupted = (already_read == -1) && (errno == EINTR);
+        read_bytes += already_read;
+    }
 
+    return read_bytes;
 
+}
 
+int open_failure_retry(const char *path, int oflag) {
+    
+    int fd;
+    do {
+        fd = open(path,oflag);
+
+    }while((fd == -1 && errno == EINTR));
+
+    return fd;
 }
 
 int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 
     unlink(client_pipe_path);
-    if (mkfifo (client_pipe_path, 0777) < 0)
+    if (mkfifo(client_pipe_path, 0777) < 0) {
         return -1;
+    }
 
-    if ((fclient = open(client_pipe_path, O_RDONLY)) < 0) 
+    fclient = open_failure_retry(client_pipe_path,O_RDONLY);
+    if(fclient < 0) {
         return -1;
-    if ((fserver = open(server_pipe_path, O_WRONLY)) < 0) 
+    }
+
+    fserver = open_failure_retry(server_pipe_path,O_WRONLY);
+    if(fserver < 0) {
         return -1;
+    }
 
     void *buffer = malloc(sizeof(char)*(MAX_PIPE_LEN+1));
     ((char*) buffer)[0] = MOUNT;
     strcpy(buffer+1 , client_pipe_path);
-    if(write(fserver, buffer , MAX_PIPE_LEN +1) <= 0)
+
+    if(send_to_server(buffer,fserver, sizeof(char)*(MAX_PIPE_LEN + 1)) != sizeof(char)*(MAX_PIPE_LEN + 1)) {
+        perror("client: error mounting");
         return -1;
+    }
     
-    if(read(fclient , buffer , sizeof(int)) <= 0)
+    if(read_from_server(fclient,buffer,sizeof(int)) != sizeof(int)) {
+        perror("client: error mounting");
         return -1;
+    }
+
     session_id = ((int*) buffer)[0];
 
     return 0;
