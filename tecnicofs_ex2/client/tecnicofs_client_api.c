@@ -42,17 +42,60 @@ int tfs_unmount() {
 }
 
 int tfs_open(char const *name, int flags) {
-    /* TODO: Implement this */
+    void *buffer = malloc(41*sizeof(char)+ 2*sizeof(int) );
+    void *last_pos = buffer;
+    ((char*)last_pos)[0] = '3';
+    last_pos = (void*)(((char*)last_pos) + 1);
+    ((int*)last_pos)[0] = session_id;
+    last_pos = (void*)(((int*)last_pos) + 1);
+    memcpy( buffer , name , 40);
+    last_pos = (void*)(((char*)last_pos) + 40);
+    ((int*)last_pos)[0] = flags;
+
+    if(write(fserver, buffer , MAX_PIPE_LEN +1) <= 0)
+        return -1;
+    
+    if(read(fclient , buffer , sizeof(int)) <= 0)
+        return -1;
     return -1;
 }
 
 int tfs_close(int fhandle) {
-    /* TODO: Implement this */
+    void *buffer = malloc(sizeof(char)+ 2*sizeof(int) );
+    void *last_pos = buffer;
+    ((char*)last_pos)[0] = '4';
+    last_pos = (void*)(((char*)last_pos) + 1);
+    ((int*)last_pos)[0] = session_id;
+    last_pos = (void*)(((int*)last_pos) + 1);
+    ((int*)last_pos)[0] = fhandle;
+
+    if(write(fserver, buffer , MAX_PIPE_LEN +1) <= 0)
+        return -1;
+    
+    if(read(fclient , buffer , sizeof(int)) <= 0)
+        return -1;
     return -1;
 }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
-    /* TODO: Implement this */
+    void *command = malloc((1+len)*sizeof(char)+ 3*sizeof(int) );
+    void *last_pos = command;
+    ((char*)last_pos)[0] = '5';
+    last_pos = (void*)(((char*)last_pos) + 1);
+    ((int*)last_pos)[0] = session_id;
+    last_pos = (void*)(((int*)last_pos) + 1);
+    ((int*)last_pos)[0] = fhandle;
+    last_pos = (void*)(((int*)last_pos) + 1);
+    ((size_t*)last_pos)[0] = fhandle;
+    last_pos = (void*)(((size_t*)last_pos) + 1);
+
+    memcpy(command , buffer , len);
+    if(write(fserver, command , MAX_PIPE_LEN +1) <= 0)
+        return -1;
+    
+    if(read(fclient , command , sizeof(int)) <= 0)
+        return -1;
+
     return -1;
 }
 
@@ -64,7 +107,7 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
     void* buffer = malloc(sizeof(char) + sizeof(int) + sizeof(int) + sizeof(size_t));
     ((char*)buffer)[0] = READ;
     ((int*) ((char*)buffer)+ 1)[0] = session_id;
-    ((int*) ((int*)buffer)+ 1)[1] = fhandle;
+    ((int*) ((char*)buffer)+ 1)[1] = fhandle;
     ((size_t*)((int*)buffer) + 2)[0] = len;
 
     if(write(fserver,buffer,sizeof(char) + sizeof(int) + sizeof(int) + sizeof(size_t)) <= 0) {
