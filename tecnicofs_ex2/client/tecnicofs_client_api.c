@@ -52,7 +52,7 @@ int tfs_open(char const *name, int flags) {
     last_pos = (void*)(((char*)last_pos) + 40);
     ((int*)last_pos)[0] = flags;
 
-    if(write(fserver, buffer , MAX_PIPE_LEN +1) <= 0)
+    if(write(fserver, buffer , 41*sizeof(char)+2*sizeof(int)) <= 0)
         return -1;
     
     if(read(fclient , buffer , sizeof(int)) <= 0)
@@ -69,7 +69,7 @@ int tfs_close(int fhandle) {
     last_pos = (void*)(((int*)last_pos) + 1);
     ((int*)last_pos)[0] = fhandle;
 
-    if(write(fserver, buffer , MAX_PIPE_LEN +1) <= 0)
+    if(write(fserver, buffer ,sizeof(char)+ 2*sizeof(int) ) <= 0)
         return -1;
     
     if(read(fclient , buffer , sizeof(int)) <= 0)
@@ -90,7 +90,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     last_pos = (void*)(((size_t*)last_pos) + 1);
 
     memcpy(command , buffer , len);
-    if(write(fserver, command , MAX_PIPE_LEN +1) <= 0)
+    if(write(fserver, command ,(1+len)*sizeof(char)+ 3*sizeof(int) ) <= 0)
         return -1;
     
     if(read(fclient , command , sizeof(int)) <= 0)
