@@ -193,7 +193,7 @@ int tfs_shutdown_after_all_closed() {
         return -1;
     }
 
-    if(receive_from_server(fclient,buffer,sizeof(int)) < 0)){
+    if(receive_from_server(fclient,buffer,sizeof(int)) < 0){
         perror("client in tfs_shutdown_after_all_closed: error receiving from server");
         return -1;
     }
