@@ -30,7 +30,7 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
     }
     
     int temp;
-    if(receive_from_server(fclient,&temp,sizeof(int)) != sizeof(int)) {
+    if(receive_from_server(fclient,&temp,sizeof(int)) < 0) {
         perror("client in tfs_mount: error receiving from server\n");
         return -1;
     }
@@ -75,7 +75,7 @@ int tfs_open(char const *name, int flags) {
         return -1;
     }
     int temp;
-    if(receive_from_server(fclient,&temp,sizeof(int)) != sizeof(int)) {
+    if(receive_from_server(fclient,&temp,sizeof(int)) < 0) {
         perror("client in tfs_open: error receiving from server\n");
         return -1;
     }
@@ -134,7 +134,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
 
     }
     size_t written_bytes = 0;
-    if(receive_from_server(fclient,command, sizeof(int)) < 0) { // should it be sizeof(size_t) here
+    if(receive_from_server(fclient,command, sizeof(int)) < 0) { 
         perror("client in tfs_write: error receiving from the server\n");
         return -1;
     }
@@ -193,7 +193,7 @@ int tfs_shutdown_after_all_closed() {
         return -1;
     }
 
-    if(receive_from_server(fclient,buffer,sizeof(int)) != sizeof(int)){
+    if(receive_from_server(fclient,buffer,sizeof(int)) < 0)){
         perror("client in tfs_shutdown_after_all_closed: error receiving from server");
         return -1;
     }
