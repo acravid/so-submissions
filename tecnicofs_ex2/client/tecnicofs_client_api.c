@@ -134,6 +134,7 @@ int tfs_open(char const *name, int flags) {
     }
    
     // TODO !!
+    // ler do buffer (int) para um variavel fhandle
     // tfs_open specification what does it return ?
     return -1 ;
 }
