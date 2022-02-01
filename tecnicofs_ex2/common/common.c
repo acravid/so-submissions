@@ -1,5 +1,5 @@
 /*This file contains functions that will be 
-both use by the client's API and the server*/
+both used by the client's API and the server*/
 
 #include "common.h"
 
@@ -55,7 +55,7 @@ int open_failure_retry(const char *path, int oflag) {
     if(fd == -1) {
         return -1;
     }
-    
+
     return fd;
 }
 
