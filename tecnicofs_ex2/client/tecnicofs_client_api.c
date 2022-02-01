@@ -2,6 +2,9 @@
 #include "fs/tfs_server.h"
 #include <errno.h>
 
+#define MAX_PIPE_LEN 40
+/*ALTERAR*/
+#define MAX_FILE_LENGTH 400/*CORRIGIR*/
 
 int session_id = -1,fclient = -1, fserver = -1;
 
