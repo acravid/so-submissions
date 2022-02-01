@@ -14,6 +14,8 @@ void *tarefa_trabalhadora(int session_id){
             pthread_cond_wait(&pode_processar[session_id], &session_lock[session_id]);
         
         /* Processar o pedido session[session_id].new_command*/
+        /*responder diretamente ao client*/
+
         session[session_id].count--;
         pthread_cond_signal(&pode_enviar[session_id]);
         pthread_mutex_unlock(&session_lock[session_id]);
@@ -27,7 +29,7 @@ void init(){
         pthread_mutex_init(&session_lock[i], NULL);
     }
     for(int i = 0 ; i < S ;i++)
-        session[i].valid = 0;
+        session[i].valid = 0,session[i].count = 0;
 }
 
 int main(int argc, char **argv) {
@@ -48,7 +50,8 @@ int main(int argc, char **argv) {
         exit (1);
     if ((fserv = open(pipename, O_RDONLY)) < 0) 
         exit(1);
-    for(;;){
+
+    while(1){
         int session_id = -1;
         read(fserv, buffer , MAX_REQUEST_LEN);
         if(((char*)buffer)[0] == '1'){
@@ -62,7 +65,8 @@ int main(int argc, char **argv) {
         else{
             pthread_mutex_lock(&session_lock[session_id]);
             while(session[session_id].count != 0)
-                pthread_cond_wait(&pode_enviar[session_id], &session_lock[session_id]);   
+                pthread_cond_wait(&pode_enviar[session_id], &session_lock[session_id]); 
+            
             /*create new_command and copy to session table*/
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);

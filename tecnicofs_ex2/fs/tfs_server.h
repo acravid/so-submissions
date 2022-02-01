@@ -14,7 +14,7 @@
 typedef struct{
     int valid;
     void *new_command;
-    int count;
+    int op_code, count;
 } session_t;
 
 #endif // TFS_SERVER.H
