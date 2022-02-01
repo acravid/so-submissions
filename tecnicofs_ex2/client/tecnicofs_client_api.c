@@ -9,6 +9,8 @@
 int session_id = -1,fclient = -1, fserver = -1;
 
 
+// TODO ! Change buffer to command
+
 size_t send_to_server(int fd,void *buffer, size_t number_of_bytes) {
 
     size_t written_bytes = 0;
