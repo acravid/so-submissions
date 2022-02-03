@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#define MAX_PIPE_LEN 40
 /* tfs_open flags */
 enum {
     TFS_O_CREAT = 0b001,

@@ -2,7 +2,6 @@
 #include "fs/tfs_server.h"
 #include <errno.h>
 
-#define MAX_PIPE_LEN 40
 /*ALTERAR*/
 #define MAX_FILE_LENGTH 400/*CORRIGIR*/
 
@@ -123,7 +122,6 @@ int tfs_open(char const *name, int flags) {
     memcpy( buffer , name , MAX_PIPE_LEN);
     last_pos = (void*)(((char*)last_pos) + MAX_PIPE_LEN);
     ((int*)last_pos)[0] = flags;
-
     
     if(send_to_server(buffer,fserver,(MAX_PIPE_LEN + 1) * sizeof(char) + 2 * sizeof(int)) != (MAX_PIPE_LEN + 1) * sizeof(char) + 2 * sizeof(int)) {
         perror("client in tfs_open: error sending request to server\n");
