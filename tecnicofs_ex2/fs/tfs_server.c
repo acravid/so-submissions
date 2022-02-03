@@ -54,7 +54,7 @@ void *tarefa_trabalhadora(int session_id){
             case 2:
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = 0;
-                session[session_id].valid = 1;
+                session[session_id].valid = 0;
                 close(fclient);
                 break;
             case 3:
