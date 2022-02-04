@@ -1,7 +1,6 @@
-#include "operations.h"
 #include "tfs_server.h"
+#include "operations.h"
 #include "common/common.h"
-
 
 #define MAX_REQUEST_LEN 40
 

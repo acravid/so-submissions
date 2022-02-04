@@ -3,12 +3,12 @@ both used by the client's API and the server*/
 
 #include "common.h"
 
-size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes) {
+ssize_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes) {
 
-    size_t written_bytes = 0;
+    ssize_t written_bytes = 0;
     
     while(written_bytes < number_of_bytes) {
-        size_t already_sent = write(fd,buffer,number_of_bytes - written_bytes);
+        ssize_t already_sent = write(fd,buffer,number_of_bytes - (size_t) written_bytes);
 
         if(already_sent == -1){
             if(errno == EINTR) { 
@@ -20,26 +20,27 @@ size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes) {
         written_bytes += already_sent;
     }
 
-    return written_bytes;
+    return (ssize_t) written_bytes;
 }
 
 
-size_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
+ssize_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
 
-    size_t read_bytes = 0;
+    ssize_t read_bytes = 0;
     int interrupted = 1;
-    size_t already_read;
 
     while(interrupted) {
-        already_read = read(fd,buffer,number_of_bytes - read_bytes);
+        ssize_t already_read;
+        already_read = read(fd,buffer,number_of_bytes - (size_t) read_bytes);
         interrupted = (already_read == -1) && (errno == EINTR);
         read_bytes += already_read;
+        if(already_read == -1) {
+            return -1;
+        }
     }
-    if(already_read == -1) {
-        return -1;
-    }
+    
 
-    return read_bytes;
+    return (ssize_t)read_bytes;
 }
 
 
@@ -56,7 +57,7 @@ int open_failure_retry(const char *path, int oflag) {
         return -1;
     }
 
-    return fd;
+    return  (ssize_t) fd;
 }
 
 

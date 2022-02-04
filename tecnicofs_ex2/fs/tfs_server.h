@@ -1,6 +1,8 @@
 #ifndef TFS_SERVER_H
 #define TFS_SERVER_H
 
+#include "common/common.h"
+
 #define S 20
 
 
