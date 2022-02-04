@@ -26,6 +26,7 @@ void *tarefa_trabalhadora(void *args){
                 client_pipe_path = malloc(sizeof(char)*MAX_PIPE_LEN);
                 return_message = malloc(sizeof(int));
                 memcpy(client_pipe_path , session[session_id].new_command, (size_t) MAX_PIPE_LEN);
+                printf("OPENNING\n");
                 fclient = open_failure_retry(client_pipe_path,O_WRONLY);
                 if(fclient < 0)
                     ((int*)return_message)[0] = -1,session[session_id].valid = 0;
@@ -87,6 +88,7 @@ void *tarefa_trabalhadora(void *args){
         }
         send_to_pipe(fclient , return_message , sizeof(int));
         free(return_message);
+        free(session[session_id].new_command);
         /* Processar o pedido session[session_id].new_command*/
         /*responder diretamente ao client*/
 
@@ -137,14 +139,14 @@ int main(int argc, char **argv) {
 
     if ((fserv = open_failure_retry(pipename, O_RDONLY)) < 0) 
         exit(1);
-    printf("OPEN\n");
+        
     while(1){
         int session_id = -1;
         if(receive_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
             perror("tfs_server: failed to read \n");
             return -1;
         }
-        
+        printf("NEW COMMAND\n");
         if(((char*)buffer)[0] == '1') {
 
             /*calculate new session_id*/
@@ -152,7 +154,8 @@ int main(int argc, char **argv) {
             pthread_mutex_lock(&session_lock[session_id]);
 
             session[session_id].op_code = 1;
-            printf("Start Process\n");
+            session[session_id].new_command = malloc(sizeof(char)*MAX_PIPE_LEN);
+            memcpy(session[session_id].new_command , (char*) buffer+1, MAX_PIPE_LEN);
 
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);
@@ -161,21 +164,22 @@ int main(int argc, char **argv) {
         else{
 
             void *last_pos = buffer;
-            char opcode = ((char*)last_pos)[0];
-            int op = opcode - '0';
+            int op = ((char*)last_pos)[0]- '0';
+
             last_pos = (void*)(((char*)last_pos) + 1);
             session_id = ((int*)last_pos)[0]; 
+            printf("DEAD\n");
             
             pthread_mutex_lock(&session_lock[session_id]);
             while(session[session_id].count != 0)
                 pthread_cond_wait(&pode_enviar[session_id], &session_lock[session_id]); 
 
-        
+            printf("STILL OK");
             last_pos = (void*)(((int*)last_pos) + 1);
             session[session_id].op_code = op;
 
-            session[session_id].new_command = malloc(sizeof(char)*MAX_COMMAND_LENGTH);
-            memcpy(session[session_id].new_command,last_pos,MAX_COMMAND_LENGTH);
+            session[session_id].new_command = malloc(sizeof(char)*(MAX_COMMAND_LENGTH-5));
+            memcpy(session[session_id].new_command,last_pos,MAX_COMMAND_LENGTH-5);
 
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);

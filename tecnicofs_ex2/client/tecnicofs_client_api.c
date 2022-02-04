@@ -11,19 +11,14 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
         perror("client in tfs_mount: error creating pipe\n");
         return -1;
     }
-    
+
     fserver = open_failure_retry(server_pipe_path,O_WRONLY);
     if(fserver < 0) {
         perror("client in tfs_mount: error connecting to server\n");
         return -1;
     }
 
-    fclient = open_failure_retry(client_pipe_path,O_RDONLY);
-    if(fclient < 0) {
-        perror("client in tfs_mount: error connecting to pipe client\n");
-        return -1;
-    }
-
+    
     
     void *command = malloc(sizeof(char)*(MAX_PIPE_LEN+1));
     ((char*) command)[0] = MOUNT;
@@ -33,6 +28,13 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
         perror("client in tfs_mount: error sending request to server\n");
         return -1;
     }
+    
+    fclient = open_failure_retry(client_pipe_path,O_RDONLY);
+    if(fclient < 0) {
+        perror("client in tfs_mount: error connecting to pipe client\n");
+        return -1;
+    }
+
     
     int temp;
     if(receive_from_pipe(fclient,&temp,sizeof(int)) < 0) {
