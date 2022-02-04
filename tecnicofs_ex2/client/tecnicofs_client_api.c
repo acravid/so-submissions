@@ -7,9 +7,7 @@ int session_id = -1, fclient = -1, fserver = -1;
 int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 
     unlink(client_pipe_path);
-    int t;
-    if ((t = mkfifo(client_pipe_path, 0666)) < 0) {
-        printf("return %d } %s ? %s \n", t , client_pipe_path , server_pipe_path);
+    if (mkfifo(client_pipe_path, 0666) < 0) {
         perror("client in tfs_mount: error creating pipe\n");
         return -1;
     }
