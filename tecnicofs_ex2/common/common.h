@@ -15,7 +15,7 @@
  * Returns the number of bytes that were written (can only be number_of_bytes)
  * or -1 in case of error
  */
-size_t send_to_server(int fd,void *buffer, size_t number_of_bytes);
+size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes);
 
 /* Reads from a file, normally to a named pipe
  * Input:
@@ -25,7 +25,7 @@ size_t send_to_server(int fd,void *buffer, size_t number_of_bytes);
  * Returns the number of bytes that were copied from the file to the buffer
  * (can only be equal to 'number_of_bytes') or -1 in case of error
  */
-size_t receive_from_server(int fd,void* buffer,size_t number_of_bytes);
+size_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes);
 
 /* Opens a file
 *

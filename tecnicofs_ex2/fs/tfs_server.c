@@ -16,7 +16,9 @@ void *tarefa_trabalhadora(int session_id){
         while(session[session_id].count == 0)
             pthread_cond_wait(&pode_processar[session_id], &session_lock[session_id]);
         
-        void *return_message;
+        void *return_message,*buffer;
+        int fhandle;
+        size_t len;
         switch (session[session_id].op_code){
             case 1:;
                 void *client_pipe_path = malloc(sizeof(char)*MAX_PIPE_LEN);
@@ -46,23 +48,23 @@ void *tarefa_trabalhadora(int session_id){
                 free(name);
                 break;
             case 4:;
-                int fhandle = ((int*)session[session_id].new_command)[0];
+                fhandle = ((int*)session[session_id].new_command)[0];
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = tfs_close(fhandle);
                 break;
             case 5:;
-                int fhandle = ((int*)session[session_id].new_command)[0];
-                size_t len = ((int*)session[session_id].new_command)[1];
-                void *buffer = malloc(sizeof(char)*len);
+                fhandle = ((int*)session[session_id].new_command)[0];
+                len = ((size_t*)session[session_id].new_command)[1];
+                buffer = malloc(sizeof(char)*len);
                 memcpy(buffer , ((char*) (((int*)session[session_id].new_command)+ 2)), len*sizeof(char));
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = tfs_write(fhandle, buffer, len);
                 free(buffer);
                 break;
             case 6:;
-                int fhandle = ((int*)session[session_id].new_command)[0];
-                size_t len = ((int*)session[session_id].new_command)[1];
-                void *buffer = malloc(sizeof(char)*len);
+                fhandle = ((int*)session[session_id].new_command)[0];
+                len = ((size_t*)session[session_id].new_command)[1];
+                buffer = malloc(sizeof(char)*len);
                 size_t bytes_read = tfs_read(fhandle , buffer , len);
                 if(bytes_read == -1)
                     return_message = malloc(sizeof(int)),((int*)return_message)[0] = -1;
@@ -133,7 +135,7 @@ int main(int argc, char **argv) {
     while(1){
         int session_id = -1;
         
-        if(read_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
+        if(receive_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
             perror("tfs_server: failed to read \n");
             return -1;
         }
