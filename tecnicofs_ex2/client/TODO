@@ -4,10 +4,90 @@ shut_down
 Perguntar tamanho maximo de um comando (tfs_write)
 E para copiar tudo
 
-Perguntar se vai avaliar os testes
+Perguntar se vai avaliar os testes , temos de fazer testes ?? 
 
-Perguntar return se server nao conseguir ler do pipe
+Perguntar return se server nao conseguir ler do pipe , comportamento a ter ?? 
 
-Perguntar size_t to int tarefa trabalhadora read
+qual é o tratamento a ter caso nao consigamos ler da pipe ???
 
-Perguntar se nao encontrar session disponivel
+Perguntar size_t to int tarefa trabalhadora read 
+
+Perguntar se nao encontrar session disponivel , vamos sempre encontrar uma session disponivel ??
+
+como é suposto fazer o error handling
+
+sigpipe duvidas ??? 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -47,7 +47,9 @@ ssize_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
 int open_failure_retry(const char *path, int oflag) {
     int fd;
     do {
+        printf("TRY TO OPEN");
         fd = open(path,oflag);
+        printf("OPEN IS WORKING");
 
     // only retry the operation if the error is caused by an interrupt
     }while((fd == -1 && errno == EINTR));
