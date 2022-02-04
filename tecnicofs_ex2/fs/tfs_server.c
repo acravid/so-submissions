@@ -7,8 +7,10 @@
 session_t session[S];
 pthread_cond_t pode_enviar[S],pode_processar[S];
 pthread_mutex_t session_lock[S];
+pthread_t tarefas_trabalhadoras[S];
 
-void *tarefa_trabalhadora(int session_id){
+void *tarefa_trabalhadora(void *args){
+    int session_id = ((int*) args)[0];
     int fclient= -1;
     while(1) {
         pthread_mutex_lock(&session_lock[session_id]);
@@ -99,6 +101,7 @@ void init(){
         pthread_cond_init(&pode_enviar[i], NULL);
         pthread_cond_init(&pode_processar[i], NULL);
         pthread_mutex_init(&session_lock[i], NULL);
+        pthread_create(&tarefas_trabalhadoras[i], NULL , tarefa_trabalhadora, (void*) &i);
     }
     for(int i = 0 ; i < S ;i++)
         session[i].valid = 0,session[i].count = 0;
@@ -129,14 +132,14 @@ int main(int argc, char **argv) {
     printf("Starting TecnicoFS server with pipe called %s\n", pipename);
  
     unlink(pipename);
-    if (mkfifo (pipename, 0777) < 0)
+    if (mkfifo (pipename, 0666) < 0)
         exit (1);
-    if ((fserv = open(pipename, O_RDONLY)) < 0) 
-        exit(1);
 
+    if ((fserv = open_failure_retry(pipename, O_RDONLY)) < 0) 
+        exit(1);
+    printf("OPEN\n");
     while(1){
         int session_id = -1;
-        
         if(receive_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
             perror("tfs_server: failed to read \n");
             return -1;
@@ -147,6 +150,9 @@ int main(int argc, char **argv) {
             /*calculate new session_id*/
             session_id = find_session_id(); //erro se der -1
             pthread_mutex_lock(&session_lock[session_id]);
+
+            session[session_id].op_code = 1;
+            printf("Start Process\n");
 
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);

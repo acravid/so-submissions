@@ -15,14 +15,14 @@ int main(int argc, char **argv) {
 
     int f;
     ssize_t r;
-
+    
     if (argc < 3) {
         printf("You must provide the following arguments: 'client_pipe_path "
                "server_pipe_path'\n");
         return 1;
     }
-    printf("%s %s RETURN MOUNT %d\n" , argv[1] , argv[2] , tfs_mount(argv[1],argv[2]));
     assert(tfs_mount(argv[1], argv[2]) == 0);
+    printf("MOOUNT SUCCess\n");
 
     f = tfs_open(path, TFS_O_CREAT);
     assert(f != -1);

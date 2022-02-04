@@ -32,6 +32,7 @@ ssize_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
     while(interrupted) {
         ssize_t already_read;
         already_read = read(fd,buffer,number_of_bytes - (size_t) read_bytes);
+        printf("READ BYTES = %d\n" , (int) already_read);
         interrupted = (already_read == -1) && (errno == EINTR);
         read_bytes += already_read;
         if(already_read == -1) {
@@ -45,10 +46,11 @@ ssize_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
 
 
 int open_failure_retry(const char *path, int oflag) {
-    
     int fd;
     do {
+        printf("TRY TO OPEN\n");
         fd = open(path,oflag);
+        printf("fd = %d\n" , fd);   
 
     // only retry the operation if the error is caused by an interrupt
     }while((fd == -1 && errno == EINTR));
@@ -57,7 +59,7 @@ int open_failure_retry(const char *path, int oflag) {
         return -1;
     }
 
-    return  (ssize_t) fd;
+    return fd;
 }
 
 

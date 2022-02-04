@@ -7,8 +7,14 @@ int session_id = -1, fclient = -1, fserver = -1;
 int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
 
     unlink(client_pipe_path);
-    if (mkfifo(client_pipe_path, 0666) < 0) {
+    if (mkfifo(client_pipe_path, 0777) < 0) {
         perror("client in tfs_mount: error creating pipe\n");
+        return -1;
+    }
+    
+    fserver = open_failure_retry(server_pipe_path,O_WRONLY);
+    if(fserver < 0) {
+        perror("client in tfs_mount: error connecting to server\n");
         return -1;
     }
 
@@ -18,12 +24,7 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
         return -1;
     }
 
-    fserver = open_failure_retry(server_pipe_path,O_WRONLY);
-    if(fserver < 0) {
-        perror("client in tfs_mount: error connecting to server\n");
-        return -1;
-    }
-
+    
     void *command = malloc(sizeof(char)*(MAX_PIPE_LEN+1));
     ((char*) command)[0] = MOUNT;
     strcpy(command+1 , client_pipe_path);
