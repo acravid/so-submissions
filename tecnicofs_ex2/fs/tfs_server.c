@@ -1,6 +1,7 @@
 #include "operations.h"
 #include "tfs_server.h"
-#include <errno.h>
+#include "common/common.h"
+
 
 #define MAX_REQUEST_LEN 40
 
@@ -8,32 +9,9 @@ session_t session[S];
 pthread_cond_t pode_enviar[S],pode_processar[S];
 pthread_mutex_t session_lock[S];
 
-size_t send_to_client(int fd,void *buffer, size_t number_of_bytes) {
-
-    size_t written_bytes = 0;
-    if(fd < 0)
-        return -1;
-    
-    while(written_bytes < number_of_bytes) {
-        size_t already_sent = write(fd,buffer,number_of_bytes - written_bytes);
-
-        if(already_sent == -1){
-            if(errno == EINTR) { 
-                continue;
-            } else {
-                return -1;
-            }
-        }
-        written_bytes += already_sent;
-    }
-
-    return written_bytes;
-
-}
-
 void *tarefa_trabalhadora(int session_id){
     int fclient= -1;
-    while(1){
+    while(1) {
         pthread_mutex_lock(&session_lock[session_id]);
         while(session[session_id].count == 0)
             pthread_cond_wait(&pode_processar[session_id], &session_lock[session_id]);
@@ -102,7 +80,7 @@ void *tarefa_trabalhadora(int session_id){
             default:
                 break;
         }
-        send_to_client(fclient , return_message , sizeof(int));
+        send_to_pipe(fclient , return_message , sizeof(int));
         free(return_message);
         /* Processar o pedido session[session_id].new_command*/
         /*responder diretamente ao client*/
@@ -123,6 +101,16 @@ void init(){
         session[i].valid = 0,session[i].count = 0;
 }
 
+
+int find_session_id() {
+
+    for(int id = 0; id < S; id++) {
+        if(session[id].valid == 0) {
+            return id;
+        }
+    }
+}
+
 int main(int argc, char **argv) {
 
     if (argc < 2) {
@@ -132,10 +120,10 @@ int main(int argc, char **argv) {
     init();
 
     char *pipename = argv[1];
-    void *buffer = (void*) malloc(sizeof(char)*MAX_REQUEST_LEN);
+    void *buffer = (void*) malloc(sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int));
     int fserv;
     printf("Starting TecnicoFS server with pipe called %s\n", pipename);
-
+ 
     unlink(pipename);
     if (mkfifo (pipename, 0777) < 0)
         exit (1);
@@ -144,21 +132,41 @@ int main(int argc, char **argv) {
 
     while(1){
         int session_id = -1;
-        read(fserv, buffer , MAX_REQUEST_LEN);
-        if(((char*)buffer)[0] == '1'){
+        
+        if(read_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
+            perror("tfs_server: failed to read \n");
+            return -1;
+        }
+        
+        if(((char*)buffer)[0] == '1') {
+
             /*calculate new session_id*/
+            session_id = find_session_id();
             pthread_mutex_lock(&session_lock[session_id]);
-            /*create session and make it valid*/
+
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);
             pthread_mutex_unlock(&session_lock[session_id]);
         }
         else{
+
+            void *last_pos = buffer;
+            char opcode = ((char*)last_pos)[0];
+            int op = opcode - '0';
+            last_pos = (void*)(((char*)last_pos) + 1);
+            int session_id = ((int*)last_pos)[0]; 
+            
             pthread_mutex_lock(&session_lock[session_id]);
             while(session[session_id].count != 0)
                 pthread_cond_wait(&pode_enviar[session_id], &session_lock[session_id]); 
-            
-            /*create new_command and copy to session table*/
+
+        
+            last_pos = (void*)(((int*)last_pos) + 1);
+            session[session_id].op_code = op;
+
+            session[session_id].new_command = malloc(sizeof(char)*MAX_COMMAND_LENGTH);
+            memcpy(session[session_id].new_command,last_pos,MAX_COMMAND_LENGTH);
+
             session[session_id].count++;
             pthread_cond_signal(&pode_processar[session_id]);
             pthread_mutex_unlock(&session_lock[session_id]);

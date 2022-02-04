@@ -3,6 +3,7 @@
 
 
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 
 /* Writes to a file specified as its argument, normally to a named pipe
@@ -54,6 +55,7 @@ enum {
 };
 
 #define MAX_FILE_LENGTH (1024)
+#define MAX_COMMAND_LENGTH (1024)
 #define MAX_PIPE_LEN (40)
 #define MOUNT '1'
 #define UNMOUNT '2'

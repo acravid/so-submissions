@@ -3,7 +3,7 @@ both used by the client's API and the server*/
 
 #include "common.h"
 
-size_t send_to_server(int fd,void *buffer, size_t number_of_bytes) {
+size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes) {
 
     size_t written_bytes = 0;
     
@@ -24,7 +24,7 @@ size_t send_to_server(int fd,void *buffer, size_t number_of_bytes) {
 }
 
 
-size_t receive_from_server(int fd,void* buffer,size_t number_of_bytes) {
+size_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes) {
 
     size_t read_bytes = 0;
     int interrupted = 1;

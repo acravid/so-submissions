@@ -123,7 +123,7 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t len) {
     last_pos = (void*)(((int*)last_pos) + 1);
     ((int*)last_pos)[0] = fhandle;
     last_pos = (void*)(((int*)last_pos) + 1);
-    ((size_t*)last_pos)[0] = fhandle;  
+    ((size_t*)last_pos)[0] = len;  
     last_pos = (void*)(((size_t*)last_pos) + 1);
     memcpy(command , buffer , len);
 
