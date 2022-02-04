@@ -25,6 +25,9 @@ int tfs_mount(char const *client_pipe_path, char const *server_pipe_path) {
     }
 
     void *command = malloc(sizeof(char)*(MAX_PIPE_LEN+1));
+
+ 
+    memset(command,'\0',(MAX_PIPE_LEN +1));
     ((char*) command)[0] = MOUNT;
     strcpy(command+1 , client_pipe_path);
 
