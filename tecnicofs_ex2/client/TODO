@@ -2,3 +2,8 @@ free buffer no fim de cada funcao do api client
 shut_down
 
 Perguntar tamanho maximo de um comando (tfs_write)
+E para copiar tudo
+
+Perguntar se vai avaliar os testes
+
+Perguntar return se server nao conseguir ler do pipe
