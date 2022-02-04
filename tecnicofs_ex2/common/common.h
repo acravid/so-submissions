@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 /* Writes to a file specified as its argument, normally to a named pipe
  * Input:
@@ -15,7 +19,7 @@
  * Returns the number of bytes that were written (can only be number_of_bytes)
  * or -1 in case of error
  */
-size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes);
+ssize_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes);
 
 /* Reads from a file, normally to a named pipe
  * Input:
@@ -25,7 +29,7 @@ size_t send_to_pipe(int fd,void *buffer, size_t number_of_bytes);
  * Returns the number of bytes that were copied from the file to the buffer
  * (can only be equal to 'number_of_bytes') or -1 in case of error
  */
-size_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes);
+ssize_t receive_from_pipe(int fd,void* buffer,size_t number_of_bytes);
 
 /* Opens a file
 *

@@ -17,11 +17,12 @@ void *tarefa_trabalhadora(int session_id){
             pthread_cond_wait(&pode_processar[session_id], &session_lock[session_id]);
         
         void *return_message,*buffer;
+        char *name,*client_pipe_path;
         int fhandle;
         size_t len;
         switch (session[session_id].op_code){
-            case 1:;
-                void *client_pipe_path = malloc(sizeof(char)*MAX_PIPE_LEN);
+            case 1:
+                client_pipe_path = malloc(sizeof(char)*MAX_PIPE_LEN);
                 return_message = malloc(sizeof(int));
                 memcpy(client_pipe_path , session[session_id].new_command, (size_t) MAX_PIPE_LEN);
                 fclient = open_failure_retry(client_pipe_path,O_WRONLY);
@@ -31,55 +32,56 @@ void *tarefa_trabalhadora(int session_id){
                     ((int*)return_message)[0] = 0,session[session_id].valid = 1;
                 free(client_pipe_path);
                 break;
-            case 2:;
+            case 2:
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = 0;
                 session[session_id].valid = 0;
                 close(fclient);
                 break;
-            case 3:;
-                void *name = malloc(sizeof(char)*40);
+            case 3:
+                name = malloc(sizeof(char)*40);
                 return_message = malloc(sizeof(int));
                 int flags;
                 memcpy(name , session[session_id].new_command , (size_t) 40);
-                flags = ((int*) (((char*)name)+40))[0];
+                flags = ((int*) (name+40))[0];
 
                 ((int*)return_message)[0] = tfs_open(name , flags);
                 free(name);
                 break;
-            case 4:;
+            case 4:
                 fhandle = ((int*)session[session_id].new_command)[0];
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = tfs_close(fhandle);
                 break;
-            case 5:;
+            case 5:
                 fhandle = ((int*)session[session_id].new_command)[0];
                 len = ((size_t*)session[session_id].new_command)[1];
                 buffer = malloc(sizeof(char)*len);
                 memcpy(buffer , ((char*) (((int*)session[session_id].new_command)+ 2)), len*sizeof(char));
                 return_message = malloc(sizeof(int));
-                ((int*)return_message)[0] = tfs_write(fhandle, buffer, len);
+                ((int*)return_message)[0] = (int) tfs_write(fhandle, buffer, len);
                 free(buffer);
                 break;
-            case 6:;
+            case 6:
                 fhandle = ((int*)session[session_id].new_command)[0];
                 len = ((size_t*)session[session_id].new_command)[1];
                 buffer = malloc(sizeof(char)*len);
-                size_t bytes_read = tfs_read(fhandle , buffer , len);
+                int bytes_read = (int) tfs_read(fhandle , buffer , len);
                 if(bytes_read == -1)
                     return_message = malloc(sizeof(int)),((int*)return_message)[0] = -1;
                 else{
-                    return_message = malloc(sizeof(int)+ sizeof(char)*bytes_read);
-                    ((int*)return_message)[0] = -1;
-                    memcpy((char*) (((int*)return_message) + 1) , buffer , bytes_read);
+                    return_message = malloc(sizeof(int)+ sizeof(char)*((size_t)bytes_read));
+                    ((int*)return_message)[0] = (int) bytes_read;
+                    memcpy((char*) (((int*)return_message) + 1) , buffer , (size_t) bytes_read);
                 }
                 free(buffer);
                 break;
-            case 7:;
-                    
+            case 7:
+                return_message = malloc(sizeof(int));   
                 break;
             
             default:
+                return_message = malloc(sizeof(int));   
                 break;
         }
         send_to_pipe(fclient , return_message , sizeof(int));
@@ -111,6 +113,7 @@ int find_session_id() {
             return id;
         }
     }
+    return -1;
 }
 
 int main(int argc, char **argv) {
@@ -143,7 +146,7 @@ int main(int argc, char **argv) {
         if(((char*)buffer)[0] == '1') {
 
             /*calculate new session_id*/
-            session_id = find_session_id();
+            session_id = find_session_id(); //erro se der -1
             pthread_mutex_lock(&session_lock[session_id]);
 
             session[session_id].count++;
@@ -156,7 +159,7 @@ int main(int argc, char **argv) {
             char opcode = ((char*)last_pos)[0];
             int op = opcode - '0';
             last_pos = (void*)(((char*)last_pos) + 1);
-            int session_id = ((int*)last_pos)[0]; 
+            session_id = ((int*)last_pos)[0]; 
             
             pthread_mutex_lock(&session_lock[session_id]);
             while(session[session_id].count != 0)
