@@ -18,7 +18,7 @@ void *tarefa_trabalhadora(int session_id){
         
         void *return_message;
         switch (session[session_id].op_code){
-            case 1:
+            case 1:;
                 void *client_pipe_path = malloc(sizeof(char)*MAX_PIPE_LEN);
                 return_message = malloc(sizeof(int));
                 memcpy(client_pipe_path , session[session_id].new_command, (size_t) MAX_PIPE_LEN);
@@ -29,13 +29,13 @@ void *tarefa_trabalhadora(int session_id){
                     ((int*)return_message)[0] = 0,session[session_id].valid = 1;
                 free(client_pipe_path);
                 break;
-            case 2:
+            case 2:;
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = 0;
                 session[session_id].valid = 0;
                 close(fclient);
                 break;
-            case 3:
+            case 3:;
                 void *name = malloc(sizeof(char)*40);
                 return_message = malloc(sizeof(int));
                 int flags;
@@ -45,12 +45,12 @@ void *tarefa_trabalhadora(int session_id){
                 ((int*)return_message)[0] = tfs_open(name , flags);
                 free(name);
                 break;
-            case 4:
+            case 4:;
                 int fhandle = ((int*)session[session_id].new_command)[0];
                 return_message = malloc(sizeof(int));
                 ((int*)return_message)[0] = tfs_close(fhandle);
                 break;
-            case 5:
+            case 5:;
                 int fhandle = ((int*)session[session_id].new_command)[0];
                 size_t len = ((int*)session[session_id].new_command)[1];
                 void *buffer = malloc(sizeof(char)*len);
@@ -59,7 +59,7 @@ void *tarefa_trabalhadora(int session_id){
                 ((int*)return_message)[0] = tfs_write(fhandle, buffer, len);
                 free(buffer);
                 break;
-            case 6:
+            case 6:;
                 int fhandle = ((int*)session[session_id].new_command)[0];
                 size_t len = ((int*)session[session_id].new_command)[1];
                 void *buffer = malloc(sizeof(char)*len);
@@ -73,7 +73,7 @@ void *tarefa_trabalhadora(int session_id){
                 }
                 free(buffer);
                 break;
-            case 7:
+            case 7:;
                     
                 break;
             
