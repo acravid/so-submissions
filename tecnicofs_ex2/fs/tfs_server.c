@@ -1,6 +1,7 @@
 #include "tfs_server.h"
 #include "operations.h"
 #include "common/common.h"
+#include <signal.h>
 
 #define MAX_REQUEST_LEN 40
 
@@ -117,24 +118,39 @@ int find_session_id() {
 
 int main(int argc, char **argv) {
 
+
     if (argc < 2) {
         printf("Please specify the pathname of the server's pipe.\n");
         return 1;
     }
     init();
 
+    signal(SIGPIPE,SIG_IGN);
+    
     char *pipename = argv[1];
     void *buffer = (void*) malloc(sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int));
     int fserv;
     printf("Starting TecnicoFS server with pipe called %s\n", pipename);
- 
+    
+
     unlink(pipename);
+    printf("TEST\n");
     if (mkfifo (pipename, 0777) < 0)
         exit (1);
-    if ((fserv = open(pipename, O_RDONLY)) < 0) 
+
+    printf("AQUI\n");
+    if ((fserv = open_failure_retry(pipename, O_RDONLY)) < 0) 
         exit(1);
 
+
+    printf("AQUI  3\n");
+
+    
+
     while(1){
+
+
+        printf("ERROR\n");
         int session_id = -1;
         
         if(receive_from_pipe(fserv, buffer ,sizeof(char)*(MAX_COMMAND_LENGTH + 1) + sizeof(int)) < 0) { // ???
